@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ডিজিটাল রুটিন</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; padding: 15px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
+        .alert-box { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; border: 1px solid #ffeeba; font-weight: bold; text-align: center; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; font-size: 16px; background: #fff; }
+        .card { background: #fff; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 12px; border-left: 6px solid #1a73e8; border-radius: 8px; transition: 0.3s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .time { color: #f57c00; font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; }
+        .subject { font-size: 18px; font-weight: bold; color: #202124; margin-bottom: 5px; }
+        .teacher { color: #5f6368; font-size: 15px; }
+        #loading { text-align: center; color: #666; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ডিপার্টমেন্ট রুটিন</h2>
+    <div id="examAlert" class="alert-box"></div>
+    <p id="loading">সার্ভার থেকে তথ্য আসছে...</p>
+
+    <div id="mainContent" style="display:none;">
+        <label>আপনার বর্ষ নির্বাচন করুন:</label>
+        <select id="yearSelect" onchange="filterRoutine()">
+            <option value="">--সিলেক্ট করুন--</option>
+            <option value="1st">১ম বর্ষ (1st Year)</option>
+            <option value="2nd">২য় বর্ষ (2nd Year)</option>
+            <option value="3rd">৩য় বর্ষ (3rd Year)</option>
+            <option value="4th">৪র্থ বর্ষ (4th Year)</option>
+        </select>
+        <div id="routineList"></div>
+    </div>
+</div>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxi_KzmYfOpJR6piw5Gkw-mwV9V7LHlyRIsBct60biHeoJDrmZOX_wcDLY-JJwpebw1/exec'; 
+    let allData = {};
+
+    async function fetchData() {
+        try {
+            const response = await fetch(scriptURL);
+            allData = await response.json();
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            filterRoutine(); 
+        } catch (e) {
+            document.getElementById('loading').innerText = "তথ্য লোড করতে সমস্যা হয়েছে!";
+        }
+    }
+
+    function filterRoutine() {
+        const selectedYear = document.getElementById('yearSelect').value;
+        const routineList = document.getElementById('routineList');
+        const alertBox = document.getElementById('examAlert');
+        routineList.innerHTML = "";
+        alertBox.style.display = 'none';
+
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const todayName = days[new Date().getDay()];
+        
+        // তারিখ চেক (M/D/YYYY)
+        const now = new Date();
+        const todayStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+        
+        let restrictionTime = null;
+        const examToday = allData.exams.find(row => row[0] === todayStr && row[1] === "Yes");
+
+        if (examToday) {
+            restrictionTime = examToday[2];
+            const msg = allData.alerts[1] ? allData.alerts[1][0] : "আজ পরীক্ষা থাকায় ক্লাস সীমিত।";
+            alertBox.innerText = "⚠️ " + msg;
+            alertBox.style.display = 'block';
+        }
+
+        if (!selectedYear) return;
+
+        let currentDay = "";
+        const filtered = allData.routine.filter((row, index) => {
+            if (index === 0) return false; // Header বাদ
+            if (row[0] && row[0] !== "") currentDay = row[0]; 
+            return currentDay === todayName && row[2] === selectedYear;
+        });
+
+        if (filtered.length === 0) {
+            routineList.innerHTML = "<p style='text-align:center;'>আজ এই বর্ষের কোনো ক্লাস নেই।</p>";
+            return;
+        }
+
+        filtered.forEach(row => {
+            const classTime = row[1];
+            if (restrictionTime && isAfter(classTime, restrictionTime)) return;
+
+            routineList.innerHTML += `
+                <div class="card">
+                    <span class="time">⏰ সময়: ${classTime}</span>
+                    <div class="subject">📚 ${row[3] || 'General Class'}</div>
+                    <div class="teacher">👨‍🏫 শিক্ষক: ${row[4]}</div>
+                </div>`;
+        });
+    }
+
+    function isAfter(classTimeRange, limitTime) {
+        try {
+            const startTimeStr = classTimeRange.split('-')[0].trim();
+            const cTime = new Date("2000/01/01 " + startTimeStr);
+            const lTime = new Date("2000/01/01 " + limitTime);
+            return cTime >= lTime;
+        } catch(e) { return false; }
+    }
+
+    fetchData();
+</script>
+</body>
+</html>
