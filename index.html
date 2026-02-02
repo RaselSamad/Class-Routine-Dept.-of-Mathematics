@@ -3,115 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ডিজিটাল রুটিন</title>
+    <title>গণিত ডিপার্টমেন্ট ক্লাসরুটিন</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; padding: 15px; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
-        .alert-box { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; border: 1px solid #ffeeba; font-weight: bold; text-align: center; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 10px; margin: 0; }
+        .container { max-width: 500px; margin: 15px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1a73e8; margin-bottom: 15px; font-size: 22px; }
+
+        /* আপনার দেওয়া আধুনিক স্ক্রলিং এনিমেশন */
+        .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; background-color: #fff; padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+        .blink-label { color: red; font-weight: bold; animation: blinker 1s linear infinite; margin-right: 10px; flex-shrink: 0; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        
+        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 25s linear infinite; color: #d32f2f; font-weight: 500; font-size: 16px; }
+        @keyframes scroll-left { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
+
+        .day-info { text-align: center; color: #2e7d32; font-size: 17px; font-weight: bold; margin: 15px 0; }
+        .alert-box { background: #feebeb; color: #d93025; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #d93025; text-align: center; font-weight: bold; display: none; }
+        
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; font-size: 16px; background: #fff; }
-        .card { background: #fff; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 12px; border-left: 6px solid #1a73e8; border-radius: 8px; transition: 0.3s; }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .time { color: #f57c00; font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; }
-        .subject { font-size: 18px; font-weight: bold; color: #202124; margin-bottom: 5px; }
-        .teacher { color: #5f6368; font-size: 15px; }
-        #loading { text-align: center; color: #666; font-weight: bold; }
+        
+        .card { background: #fff; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 12px; border-left: 6px solid #1a73e8; border-radius: 10px; }
+        .time { color: #e65100; font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; }
+        .subject { font-size: 18px; font-weight: bold; color: #202124; }
+        .teacher { color: #5f6368; font-size: 14px; margin-top: 5px; }
+        #loading { text-align: center; color: #666; margin-top: 50px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>ডিপার্টমেন্ট রুটিন</h2>
-    <div id="examAlert" class="alert-box"></div>
-    <p id="loading">সার্ভার থেকে তথ্য আসছে...</p>
+<div id="loading">রুটিন লোড হচ্ছে...</div>
 
-    <div id="mainContent" style="display:none;">
-        <label>আপনার বর্ষ নির্বাচন করুন:</label>
-        <select id="yearSelect" onchange="filterRoutine()">
-            <option value="">--সিলেক্ট করুন--</option>
-            <option value="1st">১ম বর্ষ (1st Year)</option>
-            <option value="2nd">২য় বর্ষ (2nd Year)</option>
-            <option value="3rd">৩য় বর্ষ (3rd Year)</option>
-            <option value="4th">৪র্থ বর্ষ (4th Year)</option>
-        </select>
-        <div id="routineList"></div>
+<div class="container" id="mainContainer" style="display:none;">
+    <h2>গণিত ডিপার্টমেন্ট ক্লাসরুটিন</h2>
+    
+    <div id="noticeWrapper" class="marquee-container" style="display:none;">
+        <span class="blink-label">🚨 বিশেষ নোটিশ:</span>
+        <div class="marquee-text" id="scrollingNotice"></div>
     </div>
+
+    <div class="day-info" id="dayDisplay"></div>
+    <div id="alertBox" class="alert-box"></div>
+
+    <select id="yearSelect" onchange="renderRoutine()">
+        <option value="">--আপনার বর্ষ নির্বাচন করুন--</option>
+        <option value="1st">১ম বর্ষ (1st Year)</option>
+        <option value="2nd">২য় বর্ষ (2nd Year)</option>
+        <option value="3rd">৩য় বর্ষ (3rd Year)</option>
+        <option value="4th">৪র্থ বর্ষ (4th Year)</option>
+        <option value="1M">মাস্টার্স প্রিলি (1M)</option>
+        <option value="2M">মাস্টার্স শেষ বর্ষ (2M)</option>
+    </select>
+
+    <div id="routineList"></div>
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxi_KzmYfOpJR6piw5Gkw-mwV9V7LHlyRIsBct60biHeoJDrmZOX_wcDLY-JJwpebw1/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz3Q2enjiQyWlmUiRj6sRrl1R_5B9XrVTT7WKXPlZpOUY35uUlxLiNrk9snMcKyW015/exec'; 
     let allData = {};
+    let activeRestriction = null;
 
     async function fetchData() {
         try {
             const response = await fetch(scriptURL);
             allData = await response.json();
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            filterRoutine(); 
+            setupApp();
         } catch (e) {
-            document.getElementById('loading').innerText = "তথ্য লোড করতে সমস্যা হয়েছে!";
+            document.getElementById('loading').innerText = "নেটওয়ার্ক সমস্যা!";
         }
     }
 
-    function filterRoutine() {
-        const selectedYear = document.getElementById('yearSelect').value;
-        const routineList = document.getElementById('routineList');
-        const alertBox = document.getElementById('examAlert');
-        routineList.innerHTML = "";
-        alertBox.style.display = 'none';
+    function setupApp() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'block';
 
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const todayName = days[new Date().getDay()];
-        
-        // তারিখ চেক (M/D/YYYY)
         const now = new Date();
-        const todayStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
-        
-        let restrictionTime = null;
-        const examToday = allData.exams.find(row => row[0] === todayStr && row[1] === "Yes");
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        document.getElementById('dayDisplay').innerText = `${days[now.getDay()]}, ${now.getDate()}.${now.getMonth()+1}.${now.getFullYear()}`;
 
-        if (examToday) {
-            restrictionTime = examToday[2];
-            const msg = allData.alerts[1] ? allData.alerts[1][0] : "আজ পরীক্ষা থাকায় ক্লাস সীমিত।";
-            alertBox.innerText = "⚠️ " + msg;
-            alertBox.style.display = 'block';
+        if (allData.specialNotice) {
+            document.getElementById('noticeWrapper').style.display = 'flex';
+            document.getElementById('scrollingNotice').innerText = allData.specialNotice;
         }
 
-        if (!selectedYear) return;
-
-        let currentDay = "";
-        const filtered = allData.routine.filter((row, index) => {
-            if (index === 0) return false; // Header বাদ
-            if (row[0] && row[0] !== "") currentDay = row[0]; 
-            return currentDay === todayName && row[2] === selectedYear;
+        const todayKey = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+        const alertRow = allData.alerts.find(row => {
+            const d = new Date(row[0]);
+            return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}` === todayKey && row[1].toLowerCase() === "yes";
         });
 
-        if (filtered.length === 0) {
-            routineList.innerHTML = "<p style='text-align:center;'>আজ এই বর্ষের কোনো ক্লাস নেই।</p>";
-            return;
+        if (alertRow) {
+            document.getElementById('alertBox').style.display = 'block';
+            document.getElementById('alertBox').innerHTML = `⚠️ ${alertRow[3]}`;
+            // রেস্ট্রিকশন টাইমটিকে সাধারণ টেক্সট হিসেবে নিচ্ছি (যেমন: 12:00)
+            activeRestriction = alertRow[2] ? alertRow[2].toString().trim() : null;
         }
+    }
+
+    function renderRoutine() {
+        const year = document.getElementById('yearSelect').value;
+        const list = document.getElementById('routineList');
+        list.innerHTML = "";
+        if (!year) return;
+
+        const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
+        let currentDay = "";
+        let isRestricted = false;
+        
+        const filtered = allData.routine.filter((row, index) => {
+            if (index === 0) return false;
+            if (row[0]) currentDay = row[0].trim();
+            return currentDay === dayName && String(row[2]) === year;
+        });
 
         filtered.forEach(row => {
-            const classTime = row[1];
-            if (restrictionTime && isAfter(classTime, restrictionTime)) return;
+            // রুটিনের সময় (যেমন: 9:00-9:45 থেকে 9:00 অংশটুকু নিচ্ছি)
+            const classStart = row[1].split('-')[0].trim();
 
-            routineList.innerHTML += `
+            // যদি রুটিনের ক্লাসের সময় রেস্ট্রিকশন টাইমের সাথে মিলে যায়, তবে লক চালু হবে
+            if (activeRestriction && classStart === activeRestriction) {
+                isRestricted = true;
+            }
+
+            // লক চালু হয়ে গেলে আর কোনো ক্লাস দেখানো হবে না
+            if (isRestricted) return;
+
+            list.innerHTML += `
                 <div class="card">
-                    <span class="time">⏰ সময়: ${classTime}</span>
+                    <span class="time">⏰ সময়: ${row[1]}</span>
                     <div class="subject">📚 ${row[3] || 'General Class'}</div>
-                    <div class="teacher">👨‍🏫 শিক্ষক: ${row[4]}</div>
+                    <div class="teacher">👨‍🏫 শিক্ষক: ${row[4] || 'N/A'}</div>
                 </div>`;
         });
-    }
 
-    function isAfter(classTimeRange, limitTime) {
-        try {
-            const startTimeStr = classTimeRange.split('-')[0].trim();
-            const cTime = new Date("2000/01/01 " + startTimeStr);
-            const lTime = new Date("2000/01/01 " + limitTime);
-            return cTime >= lTime;
-        } catch(e) { return false; }
+        if (list.innerHTML === "") {
+            list.innerHTML = `<p style="text-align:center; color:#666;">${activeRestriction ? "আজ এই সময়ের পরের ক্লাসগুলো স্থগিত।" : "আজ কোনো ক্লাস নেই।"}</p>`;
+        }
     }
 
     fetchData();
