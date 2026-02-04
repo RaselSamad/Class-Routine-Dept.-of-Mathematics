@@ -72,6 +72,30 @@
         }
     }
 
+   // ১. সময়কে সংখ্যায় (মিনিটে) রূপান্তর করার স্মার্ট ফাংশন
+    function timeToMinutes(timeStr) {
+        if (!timeStr) return null;
+        // সময় থেকে ঘণ্টা, মিনিট এবং AM/PM আলাদা করা
+        const match = timeStr.match(/(\d+):?(\d+)?\s*(AM|PM)?/i);
+        if (!match) return null;
+        
+        let hours = parseInt(match[1]);
+        let minutes = match[2] ? parseInt(match[2]) : 0;
+        let ampm = match[3] ? match[3].toUpperCase() : null;
+
+        // যদি AM/PM না থাকে (যেমন রুটিনের সময়গুলোতে নেই)
+        if (!ampm) {
+            // ৯ থেকে ১১ হলে সকাল, ১ থেকে ৬ হলে দুপুর/বিকাল (১২ ঘণ্টা যোগ হবে)
+            if (hours >= 1 && hours < 7) hours += 12; 
+        } else {
+            // AM/PM থাকলে সেটাকে ২৪ ঘণ্টার ফরমেটে নেয়া
+            if (hours === 12) hours = (ampm === "AM") ? 0 : 12;
+            else if (ampm === "PM") hours += 12;
+        }
+        return hours * 60 + minutes;
+    }
+
+    // ২. অ্যাপ সেটআপ করার ফাংশন
     function setupApp() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
@@ -94,11 +118,12 @@
         if (alertRow) {
             document.getElementById('alertBox').style.display = 'block';
             document.getElementById('alertBox').innerHTML = `⚠️ ${alertRow[3]}`;
-            // রেস্ট্রিকশন টাইমটিকে সাধারণ টেক্সট হিসেবে নিচ্ছি (যেমন: 12:00)
-            activeRestriction = alertRow[2] ? alertRow[2].toString().trim() : null;
+            // রেস্ট্রিকশন টাইম সেট করা
+            activeRestriction = alertRow[2] || null;
         }
     }
 
+    // ৩. রুটিন রেন্ডার করার প্রধান ফাংশন (টাইম ফিল্টারসহ)
     function renderRoutine() {
         const year = document.getElementById('yearSelect').value;
         const list = document.getElementById('routineList');
@@ -107,26 +132,28 @@
 
         const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
         let currentDay = "";
-        let isRestricted = false;
         
+        // রেস্ট্রিকশন টাইমকে মিনিটে রূপান্তর (যেমন: 9:00 AM = 540 মিনিট)
+        const limitMin = activeRestriction ? timeToMinutes(activeRestriction) : null;
+
         const filtered = allData.routine.filter((row, index) => {
             if (index === 0) return false;
             if (row[0]) currentDay = row[0].trim();
             return currentDay === dayName && String(row[2]) === year;
         });
 
+        let count = 0;
         filtered.forEach(row => {
-            // রুটিনের সময় (যেমন: 9:00-9:45 থেকে 9:00 অংশটুকু নিচ্ছি)
-            const classStart = row[1].split('-')[0].trim();
+            // রুটিনের ক্লাসের শুরুর সময় (যেমন: 11:15)
+            const classStartTimeStr = row[1].split('-')[0].trim();
+            const classMin = timeToMinutes(classStartTimeStr);
 
-            // যদি রুটিনের ক্লাসের সময় রেস্ট্রিকশন টাইমের সাথে মিলে যায়, তবে লক চালু হবে
-            if (activeRestriction && classStart === activeRestriction) {
-                isRestricted = true;
+            // মূল লজিক: যদি ক্লাসের সময় রেস্ট্রিকশন সময়ের সমান বা বেশি হয়, তবে সেটি দেখাবে না
+            if (limitMin !== null && classMin !== null && classMin >= limitMin) {
+                return; // এই ক্লাসটি বাদ
             }
 
-            // লক চালু হয়ে গেলে আর কোনো ক্লাস দেখানো হবে না
-            if (isRestricted) return;
-
+            count++;
             list.innerHTML += `
                 <div class="card">
                     <span class="time">⏰ সময়: ${row[1]}</span>
@@ -135,12 +162,14 @@
                 </div>`;
         });
 
-        if (list.innerHTML === "") {
-            list.innerHTML = `<p style="text-align:center; color:#666;">${activeRestriction ? "আজ এই সময়ের পরের ক্লাসগুলো স্থগিত।" : "আজ কোনো ক্লাস নেই।"}</p>`;
+        if (count === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#666; padding:20px;">${activeRestriction ? "আজকের এই সময়ের পরের সব ক্লাস স্থগিত করা হয়েছে।" : "আজ কোনো ক্লাস নেই।"}</p>`;
         }
     }
 
-    fetchData();
+    fetchData(); // এটি সবার শেষে থাকবে
+
 </script>
 </body>
 </html>
+
